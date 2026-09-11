@@ -14,9 +14,13 @@ body {
   background: radial-gradient(circle at top, rgba(59, 130, 246, 0.18), transparent 30%),
     linear-gradient(180deg, #eef2ff 0%, #f8fafc 100%);
   color: #111827;
+  padding: 1.25rem;
+}
+
+.login-page {
+  min-height: calc(100vh - 2.5rem);
   display: grid;
   place-items: center;
-  padding: 1.25rem;
 }
 
 .login-container {

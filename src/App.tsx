@@ -1,99 +1,77 @@
-import { useState, type FormEvent } from "react";
-import axios from "axios";
+import { useEffect, useState } from "react";
+import { Link, Route, Routes } from "react-router-dom";
+import Login from "./pages/Login";
+import Detalhes from "./pages/Detalhes";
+import { getProducts, type Product } from "./api/products";
 import "./App.css";
 
-export default function App() {
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [statusMessage, setStatusMessage] = useState("");
-  const [statusType, setStatusType] = useState<"success" | "error" | "">("");
-  const [token, setToken] = useState("");
+function ProductsPage() {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState("");
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>)=> {
-    event.preventDefault();
-    setIsLoading(true);
-    setStatusMessage("");
-    setStatusType("");
-    setToken("");
-
-    try {
-      const loginResponse = await axios.post("https://fakestoreapi.com/auth/login", {
-        username,
-        password,
-      });
-
-      const userResponse = await axios.get("https://fakestoreapi.com/users/2");
-
-      setToken(loginResponse.data.token);
-      setStatusType("success");
-      setStatusMessage(
-        `Bem-vindo, ${userResponse.data.name.firstname} ${userResponse.data.name.lastname}`
-      );
-    } catch (error) {
-      setStatusType("error");
-
-      if (axios.isAxiosError(error)) {
-        setStatusMessage(
-          error.response?.data?.message || "Erro ao autenticar. Verifique suas credenciais."
-        );
-      } else {
-        setStatusMessage("Erro inesperado ao autenticar.");
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const productList = await getProducts();
+        setProducts(productList);
+      } catch {
+        setErrorMessage("Não foi possível carregar os produtos. Tente novamente.");
+      } finally {
+        setIsLoading(false);
       }
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    };
+
+    fetchProducts();
+  }, []);
 
   return (
-    <div className="login-container">
-      <h1 className="login-title">Acesse sua conta</h1>
-      <form className="login-form" onSubmit={handleSubmit}>
-        <label className="login-label">
-          <span>Usuário</span>
-          <input
-            type="text"
-            placeholder="Digite seu usuário"
-            className="login-input"
-            autoComplete="username"
-            value={username}
-            onChange={(event) => setUsername(event.target.value)}
-            required
-          />
-        </label>
-        <label className="login-label">
-          <span>Senha</span>
-          <input
-            type="password"
-            placeholder="••••••••"
-            className="login-input"
-            autoComplete="current-password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            required
-          />
-        </label>
-        <button type="submit" className="login-button" disabled={isLoading}>
-          {isLoading ? "Entrando..." : "Entrar"}
-        </button>
-      </form>
-
-      {statusMessage && (
-        <p className={`login-status ${statusType}`} aria-live="polite">
-          {statusMessage}
-        </p>
-      )}
-
-      {token && (
-        <div className="login-token" aria-live="polite">
-          <p className="login-token-label">Token recebido:</p>
-          <code className="login-token-value">{token}</code>
+    <main className="products-page">
+      <header className="products-header">
+        <div>
+          <p className="products-eyebrow">Fake Store</p>
+          <h1>Produtos</h1>
+          <p>Encontre o que combina com você.</p>
         </div>
-      )}
+        <Link className="back-link" to="/">
+          Voltar para o login
+        </Link>
+      </header>
 
-      <p className="login-footer">
-        Não tem conta? <a href="#">Cadastre-se</a>
-      </p>
-    </div>
+      {isLoading && <p className="products-feedback">Carregando produtos...</p>}
+      {errorMessage && <p className="products-feedback products-error">{errorMessage}</p>}
+
+      {!isLoading && !errorMessage && (
+        <section className="products-grid" aria-label="Lista de produtos">
+          {products.map((product) => (
+            <article className="product-card" key={product.id}>
+              <div className="product-image-wrap">
+                <Link to={`/produtos/${product.id}`} aria-label={`Ver detalhes de ${product.title}`}>
+                  <img
+                    src={product.image}
+                    alt={product.title}
+                    className={`product-image ${product.id === 5 ? "product-image-bracelet" : ""}`}
+                  />
+                </Link>
+              </div>
+              <div className="product-card-content">
+                <h2>{product.title}</h2>
+                <p className="product-price">${product.price.toFixed(2)}</p>
+              </div>
+            </article>
+          ))}
+        </section>
+      )}
+    </main>
+  );
+}
+
+export default function App() {
+  return (
+    <Routes>
+      <Route path="/" element={<Login />} />
+      <Route path="/produtos" element={<ProductsPage />} />
+      <Route path="/produtos/:id" element={<Detalhes />} />
+    </Routes>
   );
 }
