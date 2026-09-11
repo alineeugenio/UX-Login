@@ -2,11 +2,15 @@ import { useEffect, useState } from "react";
 import { Link, Route, Routes } from "react-router-dom";
 import Login from "./pages/Login";
 import Detalhes from "./pages/Detalhes";
+import Carrinho from "./pages/Carrinho";
 import { getProducts, type Product } from "./api/products";
+import { CartProvider } from "./context/CartContext.tsx";
+import { useCart } from "./context/CartContext.ts";
 import "./App.css";
 
 function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
+  const { cartItems, addToCart } = useCart();
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -33,9 +37,14 @@ function ProductsPage() {
           <h1>Produtos</h1>
           <p>Encontre o que combina com você.</p>
         </div>
-        <Link className="back-link" to="/">
-          Voltar para o login
-        </Link>
+        <nav className="products-actions">
+          <Link className="cart-link" to="/carrinho">
+            Carrinho ({cartItems.length})
+          </Link>
+          <Link className="back-link" to="/">
+            Voltar para o login
+          </Link>
+        </nav>
       </header>
 
       {isLoading && <p className="products-feedback">Carregando produtos...</p>}
@@ -57,6 +66,16 @@ function ProductsPage() {
               <div className="product-card-content">
                 <h2>{product.title}</h2>
                 <p className="product-price">${product.price.toFixed(2)}</p>
+                <button
+                  type="button"
+                  className="cart-button"
+                  onClick={() => addToCart(product)}
+                  disabled={cartItems.some((item) => item.id === product.id)}
+                >
+                  {cartItems.some((item) => item.id === product.id)
+                    ? "Adicionado ao carrinho"
+                    : "Adicionar ao carrinho"}
+                </button>
               </div>
             </article>
           ))}
@@ -68,10 +87,13 @@ function ProductsPage() {
 
 export default function App() {
   return (
-    <Routes>
-      <Route path="/" element={<Login />} />
-      <Route path="/produtos" element={<ProductsPage />} />
-      <Route path="/produtos/:id" element={<Detalhes />} />
-    </Routes>
+    <CartProvider>
+      <Routes>
+        <Route path="/" element={<Login />} />
+        <Route path="/produtos" element={<ProductsPage />} />
+        <Route path="/produtos/:id" element={<Detalhes />} />
+        <Route path="/carrinho" element={<Carrinho />} />
+      </Routes>
+    </CartProvider>
   );
 }
